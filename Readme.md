@@ -1,6 +1,6 @@
 # CNFX
 
-## A base -i + 1 CNF encoder for complex field operations.
+## A base -1 + i CNF encoder for complex field operations.
 
 Note: Actually is only is implemented the addition and subtraction
 
