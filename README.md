@@ -6,6 +6,10 @@ Note: Actually is only is implemented the addition, subtraction, equality and di
 
 Note: In future the licence will change to MIT for the moment is 100% proprietary.
 
+installation: 
+        
+        pip install cnfx
+
 Work in progress.
 
         python3 test.py
