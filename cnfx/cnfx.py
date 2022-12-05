@@ -143,38 +143,39 @@ class Unit:
         return self
 
     def __ne__(self, other):
+        z = self.encoder.make_variable()
+        self.encoder.make_clauses([[z]])
+        xs = []
         for a, b in zip(self.block, other.block):
-            self.encoder.apply_not(a, b)
+            x = self.encoder.make_variable()
+            xs.append(x)
+            self.encoder.apply_xor(a, b, x)
+        xs.append(-z)
+        self.encoder.make_clauses([xs])
+        for x in xs:
+            self.encoder.make_clauses([[x, z]])
         return self
 
     def __add__(self, other):
         output = Unit(self.encoder)
-        seq = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
         x = self.encoder.make_variable()
         y = self.encoder.make_variable()
         z = self.encoder.make_variable()
         w = self.encoder.make_variable()
         self.encoder.make_clauses([[x], [y], [z], [w]])
         for i in range(self.encoder.bit_depth):
-            self.encoder.apply_full_adder(seq[0] * self.block[i], seq[1] * other.block[i], x, seq[2] * output.block[i], x)
-            self.encoder.apply_full_adder(seq[3] * self.block[i], seq[4] * other.block[i], y, seq[5] * output.block[i], y)
-            self.encoder.apply_full_adder(seq[6] * self.block[i], seq[7] * other.block[i], z, seq[8] * output.block[i], z)
-            self.encoder.apply_full_adder(seq[9] * self.block[i], seq[10] * other.block[i], w, seq[11] * output.block[i], w)
+            self.encoder.apply_full_adder(-self.block[i], -other.block[i], x, -output.block[i], x)
         return output
 
     def __sub__(self, other):
         output = Unit(self.encoder)
-        seq = [1, -1, 1, 1, -1, 1, 1, -1, 1, 1, -1, 1]
         x = self.encoder.make_variable()
         y = self.encoder.make_variable()
         z = self.encoder.make_variable()
         w = self.encoder.make_variable()
         self.encoder.make_clauses([[x], [y], [z], [w]])
         for i in range(self.encoder.bit_depth):
-            self.encoder.apply_full_adder(seq[0] * self.block[i], seq[1] * other.block[i], x, seq[2] * output.block[i], x)
-            self.encoder.apply_full_adder(seq[3] * self.block[i], seq[4] * other.block[i], y, seq[5] * output.block[i], y)
-            self.encoder.apply_full_adder(seq[6] * self.block[i], seq[7] * other.block[i], z, seq[8] * output.block[i], z)
-            self.encoder.apply_full_adder(seq[9] * self.block[i], seq[10] * other.block[i], w, seq[11] * output.block[i], w)
+            self.encoder.apply_full_adder(+self.block[i], -other.block[i], x, +output.block[i], x)
         return output
 
     def __repr__(self):
