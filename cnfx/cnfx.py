@@ -6,12 +6,13 @@ import subprocess
 class Encoder:
     def __init__(self, bit_depth, cnf_path):
         self.bit_depth = 4 * bit_depth
+        self.float_dot = self.bit_depth
         self.number_of_variables = 0
         self.number_of_clauses = 0
         self.cnf_path = cnf_path
         self.cnf_file = open(self.cnf_path, 'w+')
         self.variables = []
-        self.cbns = {
+        self.cbns_encoder = {
             0: '0000',
             1: '0001',
             2: '1100',
@@ -19,12 +20,19 @@ class Encoder:
         }
         self.render = False
 
+    @staticmethod
+    def cbns(binary):
+        x = 0
+        for i in range(len(binary)):
+            x += binary[i] * complex(-1, 1) ** (len(binary) // 2 - i - 1)
+        return x
+
     def make_variable(self):
         self.number_of_variables += 1
         return self.number_of_variables
 
     def make_block(self):
-        return [self.make_variable() for _ in range(self.bit_depth)]
+        return [self.make_variable() for _ in range(4 * (self.bit_depth + self.float_dot))]
 
     def make_clauses(self, clauses):
         for clause in clauses:
@@ -32,18 +40,27 @@ class Encoder:
             self.number_of_clauses += 1
 
     def make_constant(self, value):
-        aux = abs(value)
-        base_4 = []
-        while aux:
-            base_4.append((aux % 4))
-            aux //= 4
+        aux_integer = int(value)
+        aux_float = float(value - aux_integer)
+        base_4_integer = []
+        for _ in range(self.bit_depth):
+            base_4_integer.append(aux_integer % 4)
+            aux_integer //= 4
+        base_4_float = []
+        for _ in range(self.float_dot):
+            aux_float *= 4
+            bit = int(aux_float)
+            base_4_float.append(bit)
+            aux_float -= bit
+        base_4_float.reverse()
+        base_4 = base_4_float + base_4_integer
         base_minus_4 = []
         for i in range(len(base_4)):
             if (len(base_4) - 1 - i) % 2 == 1:
                 base_minus_4.append(-base_4[len(base_4) - 1 - i])
             else:
                 base_minus_4.append(+base_4[len(base_4) - 1 - i])
-        normalized = (self.bit_depth - len(base_minus_4)) * [0] + base_minus_4
+        normalized = base_minus_4
         while sum([i < 0 or i == 4 for i in normalized]) != 0:
             for i in range(len(normalized)):
                 if normalized[i] < 0:
@@ -53,14 +70,10 @@ class Encoder:
                 if normalized[i] == 4:
                     normalized[i] = 0
                     normalized[i - 1] -= 1
-        for i in range(len(normalized)):
-            if normalized[i] != 0:
-                normalized = normalized[i:]
-                break
+        normalized = (self.bit_depth + self.float_dot - len(normalized)) * [0] + normalized
         binary = []
         for i in normalized:
-            binary += [int(bit) for bit in self.cbns[i]]
-        binary = (self.bit_depth - len(binary)) * [0] + binary
+            binary += [int(bit) for bit in self.cbns_encoder[i]]
         block = []
         for bit in binary:
             block.append(self.make_variable())
@@ -160,7 +173,7 @@ class Unit:
         output = Unit(self.encoder)
         x = self.encoder.make_variable()
         self.encoder.make_clauses([[x]])
-        for i in range(self.encoder.bit_depth):
+        for i in range(4 * (self.encoder.bit_depth + self.encoder.float_dot)):
             self.encoder.apply_full_adder(-self.block[i], -other.block[i], x, -output.block[i], x)
         return output
 
@@ -168,19 +181,12 @@ class Unit:
         output = Unit(self.encoder)
         x = self.encoder.make_variable()
         self.encoder.make_clauses([[x]])
-        for i in range(self.encoder.bit_depth):
+        for i in range(4 * (self.encoder.bit_depth + self.encoder.float_dot)):
             self.encoder.apply_full_adder(+self.block[i], -other.block[i], x, +output.block[i], x)
         return output
 
     def __repr__(self):
         return str(self.value)
-
-
-def cbns(binary):
-    x = 0
-    for i in range(len(binary)):
-        x += binary[len(binary) - 1 - i] * complex(-1, 1) ** i
-    return x
 
 
 def satisfy(encoder, solver, params='', log=False):
@@ -216,7 +222,7 @@ def satisfy(encoder, solver, params='', log=False):
             for arg in encoder.variables:
                 if isinstance(arg, Unit):
                     binary = [int(int(model[abs(bit) - 1]) > 0) for bit in arg.block]
-                    arg.value = cbns(binary)
+                    arg.value = arg.encoder.cbns(binary)
             with open(encoder.cnf_path, 'a') as file:
                 file.write(' '.join([str(-int(literal)) for literal in model]) + '\n')
                 encoder.number_of_clauses += 1
