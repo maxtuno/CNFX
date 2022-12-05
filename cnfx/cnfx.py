@@ -159,10 +159,7 @@ class Unit:
     def __add__(self, other):
         output = Unit(self.encoder)
         x = self.encoder.make_variable()
-        y = self.encoder.make_variable()
-        z = self.encoder.make_variable()
-        w = self.encoder.make_variable()
-        self.encoder.make_clauses([[x], [y], [z], [w]])
+        self.encoder.make_clauses([[x]])
         for i in range(self.encoder.bit_depth):
             self.encoder.apply_full_adder(-self.block[i], -other.block[i], x, -output.block[i], x)
         return output
@@ -170,10 +167,7 @@ class Unit:
     def __sub__(self, other):
         output = Unit(self.encoder)
         x = self.encoder.make_variable()
-        y = self.encoder.make_variable()
-        z = self.encoder.make_variable()
-        w = self.encoder.make_variable()
-        self.encoder.make_clauses([[x], [y], [z], [w]])
+        self.encoder.make_clauses([[x]])
         for i in range(self.encoder.bit_depth):
             self.encoder.apply_full_adder(+self.block[i], -other.block[i], x, +output.block[i], x)
         return output
