@@ -16,9 +16,11 @@ v = cnfx.Unit(enc)
 assert x + y - z == w - u - v + _e
 assert x - v != _0
 assert z + u == _pi
+assert x * v == z
 
 while cnfx.satisfy(encoder=enc, solver='kissat'):
     print(x.value, y.value, z.value, w.value, w.value, v.value,
           x.value + y.value - z.value == w.value - u.value - v.value + _e.value,
           x.value - v.value != _0.value,
-          z.value + u.value == _pi.value)
+          z.value + u.value == _pi.value,
+          x.value * v.value == z.value)
