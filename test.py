@@ -21,7 +21,7 @@ assert z + u == _pi
 assert p * q == u + v
 
 while cnfx.satisfy(encoder=enc, solver='kissat'):
-    print(x.value, y.value, z.value, w.value, w.value, v.value,
+    print(x.value, y.value, z.value, w.value, w.value, v.value, p.value, q.value,
           x.value + y.value - z.value == w.value - u.value - v.value + _e.value,
           x.value - v.value != _0.value,
           z.value + u.value == _pi.value,
